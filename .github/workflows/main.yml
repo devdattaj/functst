@@ -40,7 +40,8 @@ jobs:
       - name: 'Build the Project'
         run: |
           pushd "${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}"
-          dotnet build --configuration Release /t:GenerateFunctionsJson
+          dotnet build --configuration Release -p:GenerateFunctionsJson=true
+
           popd
 
       # Publish and Create Zip Package

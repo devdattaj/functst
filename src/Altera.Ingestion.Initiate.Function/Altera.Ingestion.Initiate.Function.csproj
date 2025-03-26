@@ -43,8 +43,9 @@
   </ItemGroup>
 
   <!-- ✅ Ensures function.json is generated after build -->
+  
   <Target Name="GenerateFunctionsJson" AfterTargets="Build">
-    <Exec Command="dotnet build /t:GenerateFunctionsJson" />
+     <Exec Command="dotnet build /t:GenerateFunctionsJson" Condition="'$(IsGeneratingFunctionsJson)' != 'true'" />
   </Target>
 
 </Project>

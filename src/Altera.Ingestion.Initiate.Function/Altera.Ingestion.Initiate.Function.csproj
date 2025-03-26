@@ -1,5 +1,5 @@
 
-<Project Sdk="Microsoft.NET.Sdk.Worker">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
@@ -14,14 +14,14 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- Required packages for Azure Functions - Versions managed centrally -->
+    <!-- Required packages for Azure Functions - No versions here -->
     <PackageReference Include="Microsoft.ApplicationInsights.WorkerService" />
     <PackageReference Include="Microsoft.Azure.Functions.Worker" />
     <PackageReference Include="Microsoft.Azure.Functions.Worker.ApplicationInsights" />
     <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.Http" />
-
+    
     <!-- Include Worker SDK as an analyzer -->
-    <PackageReference Include="Microsoft.Azure.Functions.Worker.Sdk" Version="1.13.0" OutputItemType="Analyzer" />
+    <PackageReference Include="Microsoft.Azure.Functions.Worker.Sdk" OutputItemType="Analyzer" />
   </ItemGroup>
 
   <ItemGroup>

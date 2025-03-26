@@ -1,0 +1,57 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "FUNCTIONS_WORKER_RUNTIME": "dotnet-isolated",
+    "ServiceBusTrigger:ReadTopicName": "orchestration-topic",
+    "ServiceBusTrigger:SubscriptionName": "orchestration-sub",
+    "ServiceBusTrigger:fullyQualifiedNamespace": "<namespace>.windows.net:443",
+    "KeyVaultUri": "https://<namespace>.vault.azure.net"
+  },
+  "CosmosDb": {
+    "DatabaseId": "Orchestration",
+    "JobsContainerId": "Jobs",
+    "BatchesContainerId": "Batches",
+    "BatchEventsContainerId": "BatchEvents"
+  },
+  "ServiceBus": {
+    "OutboundTopicNamesMap": {
+      "InitiateImportTopic": "import-topic"
+    },
+    "RetryDelaySeconds": 1,
+    "MaxRetryDelaySeconds": 60,
+    "MaxRetries": 3,
+    "RetryMode": 1,
+    "RetryTryTimeoutSeconds": 60
+  },
+  "Serilog": {
+    "Using": [ "Serilog.Sinks.Console", "Serilog.Sinks.ApplicationInsights" ],
+    "MinimumLevel": {
+      "Default": "Information",
+      "Override": {
+        "Microsoft": "Warning",
+        "Host": "Warning",
+        "System": "Warning",
+        "Function": "Debug",
+        "Azure.Identity": "Error",
+        "Azure.Storage": "Error",
+        "Azure.Core": "Error"
+      }
+    },
+    "WriteTo": [
+      {
+        "Name": "Console",
+        "Args": {
+          "outputTemplate": "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}"
+        }
+      },
+      {
+        "Name": "ApplicationInsights",
+        "Args": {
+          "telemetryConverter": "Serilog.Sinks.ApplicationInsights.TelemetryConverters.TraceTelemetryConverter, Serilog.Sinks.ApplicationInsights"
+        }
+      }
+    ],
+    "Enrich": [ "FromLogContext", "WithMachineName", "WithThreadId" ]
+  }
+}

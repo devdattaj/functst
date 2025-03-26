@@ -9,18 +9,18 @@
     <Nullable>disable</Nullable>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
 
-    <!-- Ensures function.json is generated -->
+    <!-- Ensures function.json is generated automatically -->
     <GenerateFunctions>true</GenerateFunctions>
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- Required packages for Azure Functions - No versions here -->
+    <!-- Required packages for Azure Functions -->
     <PackageReference Include="Microsoft.ApplicationInsights.WorkerService" />
     <PackageReference Include="Microsoft.Azure.Functions.Worker" />
     <PackageReference Include="Microsoft.Azure.Functions.Worker.ApplicationInsights" />
     <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.Http" />
-    
-    <!-- Include Worker SDK as an analyzer -->
+
+    <!-- Worker SDK to generate function.json automatically -->
     <PackageReference Include="Microsoft.Azure.Functions.Worker.Sdk" OutputItemType="Analyzer" />
   </ItemGroup>
 
@@ -41,5 +41,5 @@
       <CopyToPublishDirectory>Never</CopyToPublishDirectory>
     </None>
   </ItemGroup>
-
+  
 </Project>

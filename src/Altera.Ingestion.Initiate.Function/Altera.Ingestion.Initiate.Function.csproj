@@ -2,12 +2,19 @@
 <Project Sdk="Microsoft.NET.Sdk.Functions">
 
   <PropertyGroup>
+    <!-- Targeting .NET 8.0 -->
     <TargetFramework>net8.0</TargetFramework>
+    
+    <!-- Azure Functions Version -->
     <AzureFunctionsVersion>v4</AzureFunctionsVersion>
+
+    <!-- Required settings for Azure Functions -->
     <OutputType>Exe</OutputType>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>disable</Nullable>
-    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+
+    <!-- Disable central package version management -->
+    <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
 
     <!-- Ensures function.json is generated automatically -->
     <GenerateFunctions>true</GenerateFunctions>
@@ -15,10 +22,11 @@
 
   <ItemGroup>
     <!-- Required packages for Azure Functions -->
-    <PackageReference Include="Microsoft.ApplicationInsights.WorkerService" />
-    <PackageReference Include="Microsoft.Azure.Functions.Worker" />
-    <PackageReference Include="Microsoft.Azure.Functions.Worker.ApplicationInsights" />
-    <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.Http" />
+    <PackageReference Include="Microsoft.ApplicationInsights.WorkerService" Version="2.20.0" />
+    <PackageReference Include="Microsoft.Azure.Functions.Worker" Version="1.10.0" />
+    <PackageReference Include="Microsoft.Azure.Functions.Worker.ApplicationInsights" Version="1.2.0" />
+    <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.Http" Version="3.0.0" />
+    <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.ServiceBus" Version="5.4.0" />
   </ItemGroup>
 
   <ItemGroup>

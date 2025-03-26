@@ -1,3 +1,4 @@
+
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
@@ -13,14 +14,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- Required packages for Azure Functions (No versions here!) -->
+    <!-- Required packages for Azure Functions -->
     <PackageReference Include="Microsoft.ApplicationInsights.WorkerService" />
     <PackageReference Include="Microsoft.Azure.Functions.Worker" />
     <PackageReference Include="Microsoft.Azure.Functions.Worker.ApplicationInsights" />
     <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.Http" />
-    
-    <!-- Worker SDK to generate function.json - No version here! -->
-    <PackageReference Include="Microsoft.Azure.Functions.Worker.Sdk" OutputItemType="Analyzer" />
   </ItemGroup>
 
   <ItemGroup>
@@ -41,4 +39,6 @@
     </None>
   </ItemGroup>
 
+  <!-- Correct way to include Worker SDK -->
+  <Sdk Name="Microsoft.NET.Sdk.Functions" Version="4.1.1" />
 </Project>

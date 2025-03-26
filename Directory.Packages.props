@@ -28,4 +28,16 @@
 
     <!-- Versions for Altera.Ingestion.Initiate.Function dependencies -->
     <PackageVersion Include="Microsoft.Azure.Functions.Worker" Version="1.17.0" />
-    <PackageVersion Include="
+    <PackageVersion Include="Microsoft.Azure.Functions.Worker.ApplicationInsights" Version="2.0.0" />
+    <PackageVersion Include="Microsoft.Azure.Functions.Worker.Extensions.Http" Version="3.0.13" />
+    <PackageVersion Include="Microsoft.ApplicationInsights.WorkerService" Version="2.22.0" />
+
+    <!-- Additional required packages -->
+    <PackageVersion Include="Microsoft.Azure.Functions.Worker.Middleware" Version="1.2.0" />
+    <PackageVersion Include="Microsoft.Azure.Functions.Worker.Grpc" Version="1.10.0" />
+    <PackageVersion Include="Microsoft.Extensions.Logging" Version="8.0.0" />
+    <PackageVersion Include="Microsoft.Extensions.Logging.Console" Version="8.0.0" />
+    <PackageVersion Include="Microsoft.Extensions.Configuration.Json" Version="8.0.0" />
+    <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.0" />
+  </ItemGroup>
+</Project>

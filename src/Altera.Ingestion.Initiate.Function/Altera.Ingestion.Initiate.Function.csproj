@@ -1,5 +1,5 @@
 
-<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk.Worker">
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
@@ -21,7 +21,7 @@
     <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.Http" />
 
     <!-- Include Worker SDK as an analyzer -->
-    <PackageReference Include="Microsoft.Azure.Functions.Worker.Sdk" OutputItemType="Analyzer" />
+    <PackageReference Include="Microsoft.Azure.Functions.Worker.Sdk" Version="1.13.0" OutputItemType="Analyzer" />
   </ItemGroup>
 
   <ItemGroup>
@@ -41,6 +41,5 @@
       <CopyToPublishDirectory>Never</CopyToPublishDirectory>
     </None>
   </ItemGroup>
-  
 
 </Project>

@@ -1,6 +1,7 @@
 
 <Project>
   <PropertyGroup>
+    <!-- Enable central package version management -->
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
   </PropertyGroup>
 
@@ -26,9 +27,5 @@
     <PackageVersion Include="Serilog.Sinks.Console" Version="4.1.0" />
 
     <!-- Versions for Altera.Ingestion.Initiate.Function dependencies -->
-    <PackageVersion Include="Microsoft.Azure.Functions.Worker" Version="1.13.0" />
-    <PackageVersion Include="Microsoft.Azure.Functions.Worker.ApplicationInsights" Version="2.0.0" />
-    <PackageVersion Include="Microsoft.Azure.Functions.Worker.Extensions.Http" Version="3.0.12" />
-    <PackageVersion Include="Microsoft.ApplicationInsights.WorkerService" Version="2.22.0" />
-  </ItemGroup>
-</Project>
+    <PackageVersion Include="Microsoft.Azure.Functions.Worker" Version="1.17.0" />
+    <PackageVersion Include="

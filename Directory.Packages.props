@@ -8,7 +8,7 @@
     <!-- Versions for Altera.Ingestion.Core dependencies -->
     <PackageVersion Include="Azure.Extensions.AspNetCore.Configuration.Secrets" Version="1.3.0" />
     <PackageVersion Include="Microsoft.Extensions.Hosting" Version="8.0.0" />
-    <PackageReference Include="Microsoft.NET.Sdk.Functions" Version="4.6.0" />
+    <PackageVersion Include="Microsoft.NET.Sdk.Functions" Version="4.6.0" />
     <PackageVersion Include="Azure.Messaging.ServiceBus" Version="7.15.0" />
     <PackageVersion Include="Azure.Storage.Blobs" Version="12.17.0" />
     <PackageVersion Include="Hl7.Fhir.R4" Version="5.4.0" />

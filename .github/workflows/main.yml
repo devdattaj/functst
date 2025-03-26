@@ -1,4 +1,4 @@
-name: Build and deploy initiate-test
+name: Build and deploy testinadl
 
 on:
   workflow_dispatch:
@@ -92,7 +92,7 @@ jobs:
         run: |
           az webapp deploy \
             --resource-group 'acdl-0-poc-rg' \
-            --name 'initiate-test' \
+            --name 'testinadl' \
             --src-path "${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}/publish.zip" \
             --type zip
       # Set WEBSITE_RUN_FROM_PACKAGE
@@ -100,25 +100,25 @@ jobs:
         run: |
           az webapp config appsettings set \
             --resource-group 'acdl-0-poc-rg' \
-            --name 'initiate-test' \
+            --name 'testinadl' \
             --settings WEBSITE_RUN_FROM_PACKAGE=1
       # Set FUNCTIONS_WORKER_RUNTIME to dotnet-isolated
       - name: 'Set FUNCTIONS_WORKER_RUNTIME'
         run: |
           az webapp config appsettings set \
             --resource-group 'acdl-0-poc-rg' \
-            --name 'initiate-test' \
+            --name 'testinadl' \
             --settings FUNCTIONS_WORKER_RUNTIME=dotnet-isolated
       # Set FUNCTIONS_EXTENSION_VERSION to ~4
       - name: 'Set FUNCTIONS_EXTENSION_VERSION'
         run: |
           az webapp config appsettings set \
             --resource-group 'acdl-0-poc-rg' \
-            --name 'initiate-test' \
+            --name 'testinadl' \
             --settings FUNCTIONS_EXTENSION_VERSION=~4
       # Validate that Function Triggers are Recognized
       - name: 'List Azure Function Triggers'
         run: |
           az functionapp function list \
-            --name 'initiate-test' \
+            --name 'testinadl' \
             --resource-group 'acdl-0-poc-rg'

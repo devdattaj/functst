@@ -1,5 +1,5 @@
 
-<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk.Functions">
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
@@ -39,6 +39,4 @@
     </None>
   </ItemGroup>
 
-  <!-- Correct way to include Worker SDK -->
-  <Sdk Name="Microsoft.NET.Sdk.Functions" Version="4.1.1" />
 </Project>

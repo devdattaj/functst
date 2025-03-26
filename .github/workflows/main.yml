@@ -1,21 +1,22 @@
-name: Build and deploy testinadl
+
+name: Build and Deploy testinadl
 
 on:
   workflow_dispatch:
 
 env:
-  AZURE_FUNCTIONAPP_PACKAGE_PATH: 'src/Altera.Ingestion.Initiate.Function'  # Path to function app
-  DOTNET_VERSION: '8.0'  # Set .NET version
+  AZURE_FUNCTIONAPP_PACKAGE_PATH: 'src/Altera.Ingestion.Initiate.Function' # Path to function app
+  DOTNET_VERSION: '8.0' # .NET version
 
 jobs:
   build-and-deploy:
-    runs-on: ubuntu-latest  # Use Ubuntu as the runner
+    runs-on: ubuntu-latest # Use Ubuntu as the runner
 
     steps:
       - name: 'Checkout GitHub Action'
         uses: actions/checkout@v4
 
-      # Login to Azure
+      # Login to Azure using Service Principal
       - name: 'Login to Azure using Service Principal'
         uses: azure/login@v1
         with:
@@ -27,81 +28,61 @@ jobs:
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
-      # Resolve Dependencies and Build Project
-      - name: 'Resolve Project Dependencies Using Dotnet'
+      # Clean and Restore Dependencies
+      - name: 'Clean and Restore Dependencies'
         run: |
           pushd "${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}"
-          dotnet build --configuration Release --output ./output
+          dotnet clean
+          dotnet restore
           popd
-      # Publish and ZIP Function App
+
+      # Build the Project and Generate function.json
+      - name: 'Build the Project'
+        run: |
+          pushd "${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}"
+          dotnet build --configuration Release /t:GenerateFunctionsJson
+          popd
+
+      # Publish and Create Zip Package
       - name: 'Publish and ZIP Function App'
         run: |
           pushd "${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}"
-          dotnet publish --configuration Release --output ./publish
-          # Move host.json and worker.config.json to the root of the ZIP package
-          cp ./publish/host.json ./host.json
-          cp ./publish/worker.config.json ./worker.config.json
-          # Ensure function.json is present in the publish/Initiate folder
-          if [ ! -f "./publish/Initiate/function.json" ]; then
-            echo "function.json is missing! Creating it manually."
-            mkdir -p ./publish/Initiate
-            echo '{
-              "bindings": [
-                {
-                  "authLevel": "function",
-                  "type": "httpTrigger",
-                  "direction": "in",
-                  "name": "req",
-                  "methods": ["post"]
-                },
-                {
-                  "type": "http",
-                  "direction": "out",
-                  "name": "res"
-                }
-              ]
-            }' > ./publish/Initiate/function.json
-          fi
-          # Create the ZIP package with the correct structure
-          zip -r ./publish.zip ./host.json ./worker.config.json ./publish/*
+          dotnet publish --configuration Release --output ./output/publish
+          
+          # Debug - List Published Files
+          ls -R ./output/publish
+          
+          # Zip the Published Files
+          pushd ./output/publish
+          zip -r ../publish.zip *
           popd
-      # Debug Step: Check Published Files
-      - name: 'List Contents of Publish Directory'
-        run: ls -l "${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}/publish"
+          popd
 
-      # Verify worker.config.json
-      - name: 'Verify worker.config.json'
-        run: |
-          if [ ! -f "${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}/publish/worker.config.json" ]; then
-            echo "worker.config.json is missing!"
-            exit 1
-          fi
-      # Verify function.json
+      # Verify function.json Before Deployment
       - name: 'Verify function.json'
         run: |
-          if [ ! -f "${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}/publish/Initiate/function.json" ]; then
-            echo "function.json is missing!"
+          if [ ! -f "${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}/output/publish/Initiate/function.json" ]; then
+            echo "function.json is missing after build and publish!"
             exit 1
           fi
-      # Verify ZIP Package Structure
-      - name: 'Verify ZIP Package Structure'
-        run: |
-          unzip -l "${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}/publish.zip"
+
       # Deploy the ZIP package to Azure Function App
       - name: 'Deploy to Azure Function App'
         run: |
           az webapp deploy \
             --resource-group 'acdl-0-poc-rg' \
             --name 'testinadl' \
-            --src-path "${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}/publish.zip" \
+            --src-path "${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}/output/publish.zip" \
             --type zip
-      # Set WEBSITE_RUN_FROM_PACKAGE
+
+      # Set WEBSITE_RUN_FROM_PACKAGE to 1
       - name: 'Set WEBSITE_RUN_FROM_PACKAGE to 1'
         run: |
           az webapp config appsettings set \
             --resource-group 'acdl-0-poc-rg' \
             --name 'testinadl' \
             --settings WEBSITE_RUN_FROM_PACKAGE=1
+
       # Set FUNCTIONS_WORKER_RUNTIME to dotnet-isolated
       - name: 'Set FUNCTIONS_WORKER_RUNTIME'
         run: |
@@ -109,6 +90,7 @@ jobs:
             --resource-group 'acdl-0-poc-rg' \
             --name 'testinadl' \
             --settings FUNCTIONS_WORKER_RUNTIME=dotnet-isolated
+
       # Set FUNCTIONS_EXTENSION_VERSION to ~4
       - name: 'Set FUNCTIONS_EXTENSION_VERSION'
         run: |
@@ -116,6 +98,7 @@ jobs:
             --resource-group 'acdl-0-poc-rg' \
             --name 'testinadl' \
             --settings FUNCTIONS_EXTENSION_VERSION=~4
+
       # Validate that Function Triggers are Recognized
       - name: 'List Azure Function Triggers'
         run: |

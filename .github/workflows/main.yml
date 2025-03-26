@@ -5,107 +5,97 @@ on:
   workflow_dispatch:
 
 env:
-  AZURE_FUNCTIONAPP_PACKAGE_PATH: 'src/Altera.Ingestion.Initiate.Function' # Path to function app
-  DOTNET_VERSION: '8.0'  # Set .NET version
+  AZURE_FUNCTIONAPP_PACKAGE_PATH: 'src/Altera.Ingestion.Initiate.Function'  # Path to the Function App
+  DOTNET_VERSION: '8.0'  # .NET version
+  FUNCTION_APP_NAME: 'testinadl'  # Name of the Azure Function App
+  RESOURCE_GROUP: 'acdl-0-poc-rg'  # Resource group name
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
-      # ✅ Checkout code
-      - name: 'Checkout Code'
-        uses: actions/checkout@v4
+    # Checkout code
+    - name: 'Checkout Code'
+      uses: actions/checkout@v4
 
-      # ✅ Login to Azure using Service Principal
-      - name: 'Login to Azure'
-        uses: azure/login@v1
-        with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
+    # Set up .NET environment
+    - name: 'Setup .NET Environment'
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
 
-      # ✅ Setup .NET 8.0 Environment
-      - name: 'Setup .NET ${{ env.DOTNET_VERSION }}'
-        uses: actions/setup-dotnet@v3
-        with:
-          dotnet-version: ${{ env.DOTNET_VERSION }}
+    # Restore dependencies
+    - name: 'Restore Dependencies'
+      run: |
+        pushd "${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}"
+        dotnet restore
+        popd
 
-      # ✅ Restore Dependencies
-      - name: 'Restore Dependencies'
-        run: |
-          pushd "${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}"
-          dotnet restore
-          popd
+    # Build and generate function.json
+    - name: 'Build and Generate function.json'
+      run: |
+        pushd "${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}"
+        dotnet build --configuration Release
+        popd
 
-      # ✅ Build Project
-      - name: 'Build Project'
-        run: |
-          pushd "${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}"
-          dotnet build --configuration Release
-          popd
+    # Publish the Function App
+    - name: 'Publish the Function App'
+      run: |
+        pushd "${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}"
+        dotnet publish --configuration Release --output ./output/publish
+        popd
 
-      # ✅ Publish Project and Generate function.json
-      - name: 'Publish Project'
-        run: |
-          pushd "${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}"
-          dotnet publish --configuration Release --output ./output/publish
-          popd
+    # Verify function.json
+    - name: 'Verify function.json exists'
+      run: |
+        if [ ! -f "${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}/output/publish/Initiate/function.json" ]; then
+          echo "Error: function.json is missing after publish!"
+          exit 1
+        fi
 
-      # ✅ Check if function.json is generated
-      - name: 'Check if function.json is generated'
-        run: |
-          if [ ! -f "${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}/output/publish/Initiate/function.json" ]; then
-            echo "Error: function.json is missing after publish!"
-            exit 1
-          fi
+    # Login to Azure
+    - name: 'Login to Azure'
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      # ✅ List Contents for Debugging
-      - name: 'List Contents of Publish Directory'
-        run: |
-          ls -R "${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}/output/publish"
+    # Deploy the Function App to Azure
+    - name: 'Deploy Azure Function'
+      run: |
+        az webapp deploy \
+          --resource-group ${{ env.RESOURCE_GROUP }} \
+          --name ${{ env.FUNCTION_APP_NAME }} \
+          --src-path "${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}/output/publish" \
+          --type zip
 
-      # ✅ Zip Published Files
-      - name: 'Create ZIP Package'
-        run: |
-          pushd "${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}/output/publish"
-          zip -r ../publish.zip .
-          popd
+    # Set WEBSITE_RUN_FROM_PACKAGE
+    - name: 'Set WEBSITE_RUN_FROM_PACKAGE to 1'
+      run: |
+        az webapp config appsettings set \
+          --resource-group ${{ env.RESOURCE_GROUP }} \
+          --name ${{ env.FUNCTION_APP_NAME }} \
+          --settings WEBSITE_RUN_FROM_PACKAGE=1
 
-      # ✅ Deploy to Azure Function App
-      - name: 'Deploy to Azure Function App'
-        run: |
-          az webapp deploy \
-            --resource-group 'acdl-0-poc-rg' \
-            --name 'testinadl' \
-            --src-path "${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}/output/publish.zip" \
-            --type zip
+    # Set FUNCTIONS_WORKER_RUNTIME to dotnet-isolated
+    - name: 'Set FUNCTIONS_WORKER_RUNTIME'
+      run: |
+        az webapp config appsettings set \
+          --resource-group ${{ env.RESOURCE_GROUP }} \
+          --name ${{ env.FUNCTION_APP_NAME }} \
+          --settings FUNCTIONS_WORKER_RUNTIME=dotnet-isolated
 
-      # ✅ Set App Settings - WEBSITE_RUN_FROM_PACKAGE
-      - name: 'Set WEBSITE_RUN_FROM_PACKAGE to 1'
-        run: |
-          az webapp config appsettings set \
-            --resource-group 'acdl-0-poc-rg' \
-            --name 'testinadl' \
-            --settings WEBSITE_RUN_FROM_PACKAGE=1
+    # Set FUNCTIONS_EXTENSION_VERSION to ~4
+    - name: 'Set FUNCTIONS_EXTENSION_VERSION'
+      run: |
+        az webapp config appsettings set \
+          --resource-group ${{ env.RESOURCE_GROUP }} \
+          --name ${{ env.FUNCTION_APP_NAME }} \
+          --settings FUNCTIONS_EXTENSION_VERSION=~4
 
-      # ✅ Set App Settings - FUNCTIONS_WORKER_RUNTIME
-      - name: 'Set FUNCTIONS_WORKER_RUNTIME'
-        run: |
-          az webapp config appsettings set \
-            --resource-group 'acdl-0-poc-rg' \
-            --name 'testinadl' \
-            --settings FUNCTIONS_WORKER_RUNTIME=dotnet-isolated
-
-      # ✅ Set FUNCTIONS_EXTENSION_VERSION
-      - name: 'Set FUNCTIONS_EXTENSION_VERSION'
-        run: |
-          az webapp config appsettings set \
-            --resource-group 'acdl-0-poc-rg' \
-            --name 'testinadl' \
-            --settings FUNCTIONS_EXTENSION_VERSION=~4
-
-      # ✅ List Azure Function Triggers to Confirm
-      - name: 'List Azure Function Triggers'
-        run: |
-          az functionapp function list \
-            --name 'testinadl' \
-            --resource-group 'acdl-0-poc-rg'
+    # Validate Azure Function Triggers
+    - name: 'List Azure Function Triggers'
+      run: |
+        az functionapp function list \
+          --name ${{ env.FUNCTION_APP_NAME }} \
+          --resource-group ${{ env.RESOURCE_GROUP }}

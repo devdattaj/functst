@@ -14,13 +14,13 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- Required packages for Azure Functions - Versions removed! -->
+    <!-- Required packages for Azure Functions - Versions managed centrally -->
     <PackageReference Include="Microsoft.ApplicationInsights.WorkerService" />
     <PackageReference Include="Microsoft.Azure.Functions.Worker" />
     <PackageReference Include="Microsoft.Azure.Functions.Worker.ApplicationInsights" />
     <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.Http" />
-    
-    <!-- Include Worker SDK as an analyzer - Version removed -->
+
+    <!-- Include Worker SDK as an analyzer -->
     <PackageReference Include="Microsoft.Azure.Functions.Worker.Sdk" OutputItemType="Analyzer" />
   </ItemGroup>
 
@@ -34,12 +34,17 @@
     <None Update="host.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    
+
     <!-- local.settings.json is used locally but not published to Azure -->
     <None Update="local.settings.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <CopyToPublishDirectory>Never</CopyToPublishDirectory>
     </None>
   </ItemGroup>
+
+  <!-- ✅ Ensures function.json is generated after build -->
+  <Target Name="GenerateFunctionsJson" AfterTargets="Build">
+    <Exec Command="dotnet build /t:GenerateFunctionsJson" />
+  </Target>
 
 </Project>

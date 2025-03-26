@@ -14,14 +14,14 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- Required packages for Azure Functions -->
-    <PackageReference Include="Microsoft.ApplicationInsights.WorkerService" Version="2.22.0" />
-    <PackageReference Include="Microsoft.Azure.Functions.Worker" Version="1.13.0" />
-    <PackageReference Include="Microsoft.Azure.Functions.Worker.ApplicationInsights" Version="1.13.0" />
-    <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.Http" Version="3.0.1" />
+    <!-- Required packages for Azure Functions - Versions removed! -->
+    <PackageReference Include="Microsoft.ApplicationInsights.WorkerService" />
+    <PackageReference Include="Microsoft.Azure.Functions.Worker" />
+    <PackageReference Include="Microsoft.Azure.Functions.Worker.ApplicationInsights" />
+    <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.Http" />
     
-    <!-- IMPORTANT: Include Worker SDK as an analyzer -->
-    <PackageReference Include="Microsoft.Azure.Functions.Worker.Sdk" Version="1.13.0" OutputItemType="Analyzer" />
+    <!-- Include Worker SDK as an analyzer - Version removed -->
+    <PackageReference Include="Microsoft.Azure.Functions.Worker.Sdk" OutputItemType="Analyzer" />
   </ItemGroup>
 
   <ItemGroup>

@@ -1,5 +1,5 @@
 
-name: Build and Deploy testinadl
+name: Build and Deploy Azure Function
 
 on:
   workflow_dispatch:
@@ -10,99 +10,54 @@ env:
 
 jobs:
   build-and-deploy:
-    runs-on: ubuntu-latest # Use Ubuntu as the runner
+    runs-on: ubuntu-latest
 
     steps:
-      - name: 'Checkout GitHub Action'
+      # 1. Checkout the code
+      - name: 'Checkout Code'
         uses: actions/checkout@v4
 
-      # Login to Azure using Service Principal
-      - name: 'Login to Azure using Service Principal'
+      # 2. Login to Azure using Service Principal
+      - name: 'Login to Azure'
         uses: azure/login@v1
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      # Setup .NET Environment
+      # 3. Setup .NET environment
       - name: 'Setup .NET ${{ env.DOTNET_VERSION }} Environment'
         uses: actions/setup-dotnet@v1
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
-      # Clean and Restore Dependencies
-      - name: 'Clean and Restore Dependencies'
+      # 4. Restore Dependencies
+      - name: 'Restore Dependencies'
         run: |
           pushd "${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}"
-          dotnet clean
           dotnet restore
           popd
 
-      # Build the Project and Generate function.json
-      - name: 'Build the Project'
+      # 5. Build and Generate Functions JSON
+      - name: 'Build Project and Generate Functions JSON'
         run: |
           pushd "${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}"
-          dotnet build --configuration Release -p:GenerateFunctionsJson=true
-
+          dotnet build --configuration Release /t:GenerateFunctionsJson --output ./output
           popd
 
-      # Publish and Create Zip Package
-      - name: 'Publish and ZIP Function App'
+      # 6. Publish and Package Function App
+      - name: 'Publish and Package Function App'
         run: |
           pushd "${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}"
           dotnet publish --configuration Release --output ./output/publish
-          
-          # Debug - List Published Files
-          ls -R ./output/publish
-          
-          # Zip the Published Files
-          pushd ./output/publish
-          zip -r ../publish.zip *
-          popd
           popd
 
-      # Verify function.json Before Deployment
+      # 7. Debug - Check Generated Files
+      - name: 'Debug: List Contents of Publish Directory'
+        run: |
+          ls -R "${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}/output/publish"
+
+      # 8. Verify function.json is Generated
       - name: 'Verify function.json'
         run: |
-          if [ ! -f "${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}/output/publish/Initiate/function.json" ]; then
-            echo "function.json is missing after build and publish!"
-            exit 1
-          fi
-
-      # Deploy the ZIP package to Azure Function App
-      - name: 'Deploy to Azure Function App'
-        run: |
-          az webapp deploy \
-            --resource-group 'acdl-0-poc-rg' \
-            --name 'testinadl' \
-            --src-path "${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}/output/publish.zip" \
-            --type zip
-
-      # Set WEBSITE_RUN_FROM_PACKAGE to 1
-      - name: 'Set WEBSITE_RUN_FROM_PACKAGE to 1'
-        run: |
-          az webapp config appsettings set \
-            --resource-group 'acdl-0-poc-rg' \
-            --name 'testinadl' \
-            --settings WEBSITE_RUN_FROM_PACKAGE=1
-
-      # Set FUNCTIONS_WORKER_RUNTIME to dotnet-isolated
-      - name: 'Set FUNCTIONS_WORKER_RUNTIME'
-        run: |
-          az webapp config appsettings set \
-            --resource-group 'acdl-0-poc-rg' \
-            --name 'testinadl' \
-            --settings FUNCTIONS_WORKER_RUNTIME=dotnet-isolated
-
-      # Set FUNCTIONS_EXTENSION_VERSION to ~4
-      - name: 'Set FUNCTIONS_EXTENSION_VERSION'
-        run: |
-          az webapp config appsettings set \
-            --resource-group 'acdl-0-poc-rg' \
-            --name 'testinadl' \
-            --settings FUNCTIONS_EXTENSION_VERSION=~4
-
-      # Validate that Function Triggers are Recognized
-      - name: 'List Azure Function Triggers'
-        run: |
-          az functionapp function list \
-            --name 'testinadl' \
-            --resource-group 'acdl-0-poc-rg'
+          FUNCTION_JSON_PATH="${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}/output/publish/Initiate/function.json"
+          if [ ! -f "$FUNCTION_JSON_PATH" ]; then
+            echo "Error: function.json is missing after build and publish!"

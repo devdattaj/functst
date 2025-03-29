@@ -1,3 +1,4 @@
+
 name: Update Azure Function App Settings
 
 on:
@@ -17,28 +18,41 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      # Step 3: Set the entire JSON as a single environment variable
-      - name: Set entire JSON as APP_CONFIG_JSON
+      # Step 3: Extract and flatten JSON as environment variables
+      - name: Flatten and set JSON environment variables
         run: |
-          # Store JSON from secret into config.json
+          # Save JSON secret to config.json
           echo '${{ secrets.APP_CONFIG_JSON }}' > config.json
           
-          # Escape and compress JSON for Azure App Settings (removes newlines and spaces)
-          JSON_STRING=$(jq -c . config.json)
+          # Flatten the JSON and create environment variables
+          jq -r 'paths(scalars) as $p | "\($p | join("__"))=\(getpath($p))"' config.json | while IFS= read -r line; do
+            # Replace spaces and special chars for Azure compatibility
+            key=$(echo $line | cut -d= -f1 | sed 's/\[//g; s/\]//g; s/ //g')
+            value=$(echo $line | cut -d= -f2-)
 
-          # Save JSON to GITHUB_ENV to pass to next step
-          echo "APP_CONFIG_JSON=$JSON_STRING" >> $GITHUB_ENV
+            # Print for debugging
+            echo "Setting: $key=$value"
 
-      # Step 4: Apply JSON as a single application setting
-      - name: Update Azure Function App Settings with nested JSON
+            # Set environment variable for GitHub
+            echo "$key=$value" >> $GITHUB_ENV
+          done
+
+      # Step 4: Apply all environment variables as Azure Function App settings
+      - name: Apply environment variables to Azure Function
         run: |
-          # Set the entire JSON in Azure Function App Settings
-          az functionapp config appsettings set \
-            --name testinadl \
-            --resource-group acdl-0-poc-rg \
-            --settings "APP_CONFIG_JSON=$APP_CONFIG_JSON"
+          # Loop through all flattened variables and apply them to Azure
+          while IFS= read -r line; do
+            key=$(echo "$line" | cut -d= -f1)
+            value=$(echo "$line" | cut -d= -f2-)
 
-      # Step 5: Logout from Azure after completion (optional cleanup)
+            # Set key-value pairs in Azure Function App Settings
+            az functionapp config appsettings set \
+              --name testinadl \
+              --resource-group acdl-0-poc-rg \
+              --settings "$key=$value"
+          done < <(jq -r 'paths(scalars) as $p | "\($p | join("__"))=\(getpath($p))"' config.json)
+
+      # Step 5: Logout from Azure after completion
       - name: Logout from Azure
         run: |
           az logout

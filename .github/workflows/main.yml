@@ -1,7 +1,7 @@
 name: Update Azure Function App Settings
 
 on:
-  workflow_dispatch:
+  workflow_dispatch:  # Allows manual trigger from GitHub Actions UI
 
 jobs:
   update-app-settings:
@@ -17,29 +17,26 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      # Step 3: Extract JSON secret and create environment variables
-      - name: Extract JSON and create environment variables
+      # Step 3: Set the entire JSON as a single environment variable
+      - name: Set entire JSON as APP_CONFIG_JSON
         run: |
-          # Save JSON secret to a config.json file
+          # Store JSON from secret into config.json
           echo '${{ secrets.APP_CONFIG_JSON }}' > config.json
           
-          # Read the JSON file and export as environment variables
-          for key in $(jq -r 'keys[]' config.json); do
-            value=$(jq -r --arg key "$key" '.[$key]' config.json)
-            echo "$key=$value" >> $GITHUB_ENV
-          done
+          # Escape and compress JSON for Azure App Settings (removes newlines and spaces)
+          JSON_STRING=$(jq -c . config.json)
 
-      # Step 4: Update Azure Function App settings with environment variables
-      - name: Apply environment variables to Azure Function
+          # Save JSON to GITHUB_ENV to pass to next step
+          echo "APP_CONFIG_JSON=$JSON_STRING" >> $GITHUB_ENV
+
+      # Step 4: Apply JSON as a single application setting
+      - name: Update Azure Function App Settings with nested JSON
         run: |
-          # Loop through each key-value pair and set them in Azure Function
-          for key in $(jq -r 'keys[]' config.json); do
-            value=$(jq -r --arg key "$key" '.[$key]' config.json)
-            az functionapp config appsettings set \
-              --name testinadl \
-              --resource-group acdl-0-poc-rg \
-              --settings "$key=$value"
-          done
+          # Set the entire JSON in Azure Function App Settings
+          az functionapp config appsettings set \
+            --name testinadl \
+            --resource-group acdl-0-poc-rg \
+            --settings "APP_CONFIG_JSON=$APP_CONFIG_JSON"
 
       # Step 5: Logout from Azure after completion (optional cleanup)
       - name: Logout from Azure

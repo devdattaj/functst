@@ -1,101 +1,47 @@
-
-name: Build and Deploy Azure Function
+name: Update Azure Function App Settings
 
 on:
   workflow_dispatch:
 
-env:
-  AZURE_FUNCTIONAPP_PACKAGE_PATH: 'src/Altera.Ingestion.Initiate.Function'  # Path to the Function App
-  DOTNET_VERSION: '8.0'  # .NET version
-  FUNCTION_APP_NAME: 'testinadl'  # Name of the Azure Function App
-  RESOURCE_GROUP: 'acdl-0-poc-rg'  # Resource group name
-
 jobs:
-  build-and-deploy:
+  update-app-settings:
     runs-on: ubuntu-latest
-
     steps:
-    # Checkout code
-    - name: 'Checkout Code'
-      uses: actions/checkout@v4
+      # Step 1: Checkout the repository
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
-    # Set up .NET environment
-    - name: 'Setup .NET Environment'
-      uses: actions/setup-dotnet@v3
-      with:
-        dotnet-version: ${{ env.DOTNET_VERSION }}
+      # Step 2: Login to Azure using Service Principal JSON
+      - name: Login to Azure
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-    # Restore dependencies
-    - name: 'Restore Dependencies'
-      run: |
-        pushd "${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}"
-        dotnet restore
-        popd
+      # Step 3: Extract JSON secret and create environment variables
+      - name: Extract JSON and create environment variables
+        run: |
+          # Save JSON secret to a config.json file
+          echo '${{ secrets.APP_CONFIG_JSON }}' > config.json
+          
+          # Read the JSON file and export as environment variables
+          for key in $(jq -r 'keys[]' config.json); do
+            value=$(jq -r --arg key "$key" '.[$key]' config.json)
+            echo "$key=$value" >> $GITHUB_ENV
+          done
 
-    # Build and generate function.json
-    - name: 'Build and Generate function.json'
-      run: |
-        pushd "${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}"
-        dotnet build --configuration Release
-        popd
+      # Step 4: Update Azure Function App settings with environment variables
+      - name: Apply environment variables to Azure Function
+        run: |
+          # Loop through each key-value pair and set them in Azure Function
+          for key in $(jq -r 'keys[]' config.json); do
+            value=$(jq -r --arg key "$key" '.[$key]' config.json)
+            az functionapp config appsettings set \
+              --name testinadl \
+              --resource-group acdl-0-poc-rg \
+              --settings "$key=$value"
+          done
 
-    # Publish the Function App
-    - name: 'Publish the Function App'
-      run: |
-        pushd "${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}"
-        dotnet publish --configuration Release --output ./output/publish
-        popd
-
-    # Verify function.json
-    - name: 'Verify function.json exists'
-      run: |
-        if [ ! -f "${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}/output/publish/Initiate/function.json" ]; then
-          echo "Error: function.json is missing after publish!"
-          exit 1
-        fi
-
-    # Login to Azure
-    - name: 'Login to Azure'
-      uses: azure/login@v1
-      with:
-        creds: ${{ secrets.AZURE_CREDENTIALS }}
-
-    # Deploy the Function App to Azure
-    - name: 'Deploy Azure Function'
-      run: |
-        az webapp deploy \
-          --resource-group ${{ env.RESOURCE_GROUP }} \
-          --name ${{ env.FUNCTION_APP_NAME }} \
-          --src-path "${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}/output/publish" \
-          --type zip
-
-    # Set WEBSITE_RUN_FROM_PACKAGE
-    - name: 'Set WEBSITE_RUN_FROM_PACKAGE to 1'
-      run: |
-        az webapp config appsettings set \
-          --resource-group ${{ env.RESOURCE_GROUP }} \
-          --name ${{ env.FUNCTION_APP_NAME }} \
-          --settings WEBSITE_RUN_FROM_PACKAGE=1
-
-    # Set FUNCTIONS_WORKER_RUNTIME to dotnet-isolated
-    - name: 'Set FUNCTIONS_WORKER_RUNTIME'
-      run: |
-        az webapp config appsettings set \
-          --resource-group ${{ env.RESOURCE_GROUP }} \
-          --name ${{ env.FUNCTION_APP_NAME }} \
-          --settings FUNCTIONS_WORKER_RUNTIME=dotnet-isolated
-
-    # Set FUNCTIONS_EXTENSION_VERSION to ~4
-    - name: 'Set FUNCTIONS_EXTENSION_VERSION'
-      run: |
-        az webapp config appsettings set \
-          --resource-group ${{ env.RESOURCE_GROUP }} \
-          --name ${{ env.FUNCTION_APP_NAME }} \
-          --settings FUNCTIONS_EXTENSION_VERSION=~4
-
-    # Validate Azure Function Triggers
-    - name: 'List Azure Function Triggers'
-      run: |
-        az functionapp function list \
-          --name ${{ env.FUNCTION_APP_NAME }} \
-          --resource-group ${{ env.RESOURCE_GROUP }}
+      # Step 5: Logout from Azure after completion (optional cleanup)
+      - name: Logout from Azure
+        run: |
+          az logout

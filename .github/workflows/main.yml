@@ -36,7 +36,12 @@ jobs:
 
             # Apply each key-value pair to Azure Function
             az functionapp config appsettings set \
-              --name testinadl \  # <-- Replace with your Function App name
-              --resource-group acdl-0-poc-rg \  # <-- Replace with your Resource Group
+              --name testinadl \
+              --resource-group acdl-0-poc-rg \
               --settings "$key=$value"
           done
+
+      # Step 4: Logout from Azure after completion
+      - name: Logout from Azure
+        run: |
+          az logout

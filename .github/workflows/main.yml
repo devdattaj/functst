@@ -18,34 +18,31 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      # Step 3: Extract and flatten JSON as environment variables
-      - name: Flatten and set JSON environment variables
+      # Step 3: Flatten and set JSON as separate environment variables
+      - name: Flatten JSON and create individual app settings
         run: |
-          # Save JSON secret to config.json
+          # Save JSON from secret to config.json
           echo '${{ secrets.APP_CONFIG_JSON }}' > config.json
           
-          # Flatten the JSON and create environment variables
+          # Flatten JSON and set as environment variables
           jq -r 'paths(scalars) as $p | "\($p | join("__"))=\(getpath($p))"' config.json | while IFS= read -r line; do
-            # Replace spaces and special chars for Azure compatibility
+            # Replace square brackets and unwanted chars for Azure compatibility
             key=$(echo $line | cut -d= -f1 | sed 's/\[//g; s/\]//g; s/ //g')
             value=$(echo $line | cut -d= -f2-)
-
-            # Print for debugging
-            echo "Setting: $key=$value"
 
             # Set environment variable for GitHub
             echo "$key=$value" >> $GITHUB_ENV
           done
 
       # Step 4: Apply all environment variables as Azure Function App settings
-      - name: Apply environment variables to Azure Function
+      - name: Apply all settings to Azure Function
         run: |
-          # Loop through all flattened variables and apply them to Azure
+          # Read flattened variables and apply to Azure
           while IFS= read -r line; do
             key=$(echo "$line" | cut -d= -f1)
             value=$(echo "$line" | cut -d= -f2-)
 
-            # Set key-value pairs in Azure Function App Settings
+            # Set key-value pairs as individual app settings in Azure
             az functionapp config appsettings set \
               --name testinadl \
               --resource-group acdl-0-poc-rg \

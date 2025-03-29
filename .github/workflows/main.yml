@@ -24,15 +24,20 @@ jobs:
           # Save the JSON secret to config.json
           echo '${{ secrets.APP_CONFIG_JSON }}' > config.json
           
-          # Extract key-value pairs and apply them to Azure
+          # Extract key-value pairs, remove "Values." prefix, and apply them to Azure
           jq -r 'paths(scalars) as $p | "\($p | join("."))=\(getpath($p))"' config.json | while IFS= read -r line; do
             key=$(echo $line | cut -d= -f1)
             value=$(echo $line | cut -d= -f2-)
 
+            # Remove 'Values.' prefix if present
+            if [[ $key == Values.* ]]; then
+              key=$(echo $key | sed 's/^Values\.//')
+            fi
+
             # Apply each key-value pair to Azure Function
             az functionapp config appsettings set \
-              --name testinadl \
-              --resource-group acdl-0-poc-rg \
+              --name testinadl \  # <-- Replace with your Function App name
+              --resource-group acdl-0-poc-rg \  # <-- Replace with your Resource Group
               --settings "$key=$value"
           done
 
